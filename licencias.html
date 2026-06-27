@@ -214,12 +214,15 @@
               <th>Estado</th>
               <th>Activaciones</th>
               <th>Activada</th>
+              <th>Subdominio</th>
+              <th>Heartbeat</th>
+              <th>Cert</th>
               <th>Creada</th>
               <th></th>
             </tr>
           </thead>
           <tbody id="tabla-licencias">
-            <tr><td colspan="7" class="loading">Cargando...</td></tr>
+            <tr><td colspan="10" class="loading">Cargando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -318,7 +321,7 @@ function limpiarFormulario() {
 async function cargarLicencias() {
   if (!apiKey) return;
   const tbody = document.getElementById('tabla-licencias');
-  tbody.innerHTML = '<tr><td colspan="7" class="loading">Cargando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="10" class="loading">Cargando...</td></tr>';
 
   const r = await fetch(`${API}/status`, { headers: { 'X-Api-Key': apiKey } });
   const data = await r.json();
@@ -329,7 +332,7 @@ async function cargarLicencias() {
   document.getElementById('stat-pendientes').textContent = (data.total ?? 0) - activas;
 
   if (!data.licencias || data.licencias.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">Sin licencias todavía.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty">Sin licencias todavía.</td></tr>';
     return;
   }
 
@@ -341,12 +344,41 @@ async function cargarLicencias() {
     const activadaFecha = l.activada_en ? new Date(l.activada_en).toLocaleDateString('es-ES') : '—';
     const creadaFecha = new Date(l.creada_en).toLocaleDateString('es-ES');
     const fp = l.fingerprint ? `<span class="mono" title="${l.fingerprint}">${l.fingerprint.slice(0,12)}…</span>` : '<span class="mono">—</span>';
+
+    // Subdominio
+    const subdominio = l.subdominio ?? '—';
+    const subdominioHtml = subdominio !== '—'
+      ? `<a href="https://${subdominio}" target="_blank" style="color:var(--cyan);font-size:0.8rem">${subdominio}</a>`
+      : '<span style="color:var(--text-muted)">—</span>';
+
+    // Último heartbeat
+    const hb = l.ultimo_heartbeat;
+    let heartbeatHtml;
+    if (!hb) {
+      heartbeatHtml = '<span style="color:var(--text-muted)">Sin heartbeat</span>';
+    } else {
+      const diasDesde = Math.floor((Date.now() - new Date(hb).getTime()) / (1000 * 60 * 60 * 24));
+      const color = diasDesde > 14 ? 'var(--red)' : diasDesde > 7 ? 'var(--yellow)' : 'var(--green)';
+      heartbeatHtml = `<span style="color:${color};font-size:0.8rem">${diasDesde}d atrás</span>`;
+    }
+
+    // Cert status — inferido desde subdominio y heartbeat
+    let certHtml;
+    if (!subdominio || subdominio === '—') {
+      certHtml = '<span style="color:var(--text-muted)">—</span>';
+    } else {
+      certHtml = '<span style="color:var(--green);font-size:0.8rem">✓</span>';
+    }
+
     return `<tr>
       <td><div style="font-weight:500">${esc(l.nombre_local)}</div><div class="mono">${esc(l.nif)}</div></td>
       <td><span class="mono" style="cursor:pointer;color:var(--cyan)" onclick="copiar('${esc(l.clave)}', this)" title="Click para copiar">${esc(l.clave)}</span></td>
       <td>${badge}</td>
       <td>${l.activaciones_usadas} / ${l.max_activaciones}</td>
       <td>${fp}<div style="font-size:0.75rem;color:var(--text-muted)">${activadaFecha}</div></td>
+      <td>${subdominioHtml}</td>
+      <td>${heartbeatHtml}</td>
+      <td>${certHtml}</td>
       <td class="mono">${creadaFecha}</td>
       <td>${activa ? `<button class="btn btn-danger" onclick="resetear('${esc(l.clave)}', '${esc(l.nombre_local)}')">Reset</button>` : ''}</td>
     </tr>`;
