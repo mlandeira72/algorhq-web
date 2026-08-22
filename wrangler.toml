@@ -8,5 +8,9 @@ directory = "./"
 pattern = "algorhq.app"
 custom_domain = true
 
+[[routes]]
+pattern = "manlanc.com"
+custom_domain = true
+
 [assets.upload]
 filters = ["index.html"]
