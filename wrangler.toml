@@ -1,4 +1,4 @@
-name = "algorhq-web"
+name = "manlanc-web"
 compatibility_date = "2026-06-23"
 
 [assets]
@@ -11,6 +11,3 @@ custom_domain = true
 [[routes]]
 pattern = "manlanc.com"
 custom_domain = true
-
-[assets.upload]
-filters = ["index.html"]
